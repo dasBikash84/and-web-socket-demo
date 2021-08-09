@@ -20,25 +20,27 @@ class MainActivity : AppCompatActivity() {
         SimpleDateFormat(displayDateStringFormat, Locale.getDefault())
     }
 
-    private lateinit var client: OkHttpClient
-    private lateinit var ws: WebSocket
+    private val client: OkHttpClient by lazy { OkHttpClient() }
+    private var ws: WebSocket?=null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        client = OkHttpClient()
 
         btnStart.setOnClickListener { start() }
 
         btnStop.setOnClickListener {
-            ws.close(EchoWebSocketListener.NORMAL_CLOSURE_STATUS, "Goodbye !")
+            ws?.close(EchoWebSocketListener.NORMAL_CLOSURE_STATUS, "Goodbye !")
+            ws = null
         }
 
         ivSendMessage.setOnClickListener {
-            etMessage.text?.toString()?.let {
-                if (it.isNotBlank()){
-                    ws.send(it)
-                    displaySend(it)
+            etMessage.text?.toString()?.let { message ->
+                if (message.isNotBlank()){
+                    ws?.let { socket ->
+                        socket.send(message)
+                        displaySend(message)
+                    }
                 }
             }
             etMessage.setText("")
@@ -53,10 +55,29 @@ class MainActivity : AppCompatActivity() {
             ::displaySend,
             ::displayReceived,
             ::displayError,
-            ::displayStatusMessage
+            ::displayStatusMessage,
+            ::onConOpen,
+            ::onConClose
         )
         ws = client.newWebSocket(request, listener)
 
+    }
+
+    private fun onConClose() {
+        runOnMainThread {
+            btnStart.isEnabled = true
+            btnStop.isEnabled = false
+        }
+    }
+
+    private fun onConOpen() {
+        runOnMainThread {
+            tvSendMessage.text = ""
+            tvErrorMessage.text = ""
+            tvErrorMessage.text = ""
+            btnStart.isEnabled = false
+            btnStop.isEnabled = true
+        }
     }
 
     private fun displaySend(message: String) {
@@ -94,13 +115,13 @@ class MainActivity : AppCompatActivity() {
         val displayReceived: (String) -> Unit,
         val displayError: (String) -> Unit,
         val displayStatusMessage: (String) -> Unit,
+        val onOpen:()->Unit,
+        val onClose:() -> Unit
     ) : WebSocketListener() {
 
         override fun onOpen(webSocket: WebSocket, response: Response?) {
-//            println("Sending: $initString")
             displayStatusMessage("Connection opened......")
-//            webSocket.send(initString)
-//            displaySend(initString)
+            onOpen.invoke()
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -114,20 +135,21 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-            webSocket.close(NORMAL_CLOSURE_STATUS, null)
+//            webSocket.close(NORMAL_CLOSURE_STATUS, null)
             println("Closing : $code / $reason")
             displayStatusMessage("Connection closed : Code:$code, Reason: $reason")
+            onClose.invoke()
         }
 
         override fun onFailure(webSocket: WebSocket?, t: Throwable, response: Response?) {
             println("Error : " + t.message)
             displayStatusMessage("Error : " + t.message)
             displayError("Error : " + t.message)
+            onClose.invoke()
         }
 
         companion object {
             const val NORMAL_CLOSURE_STATUS = 1000
-            private const val initString = "Hello!"
         }
     }
 }
