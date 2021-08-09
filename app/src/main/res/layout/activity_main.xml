@@ -1,60 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_marginHorizontal="16dp">
 
     <Button
         android:id="@+id/btnStart"
         android:textAllCaps="false"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btnStop" />
+        android:text="Start"/>
 
     <Button
         android:id="@+id/btnStop"
         android:textAllCaps="false"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Stop"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btnSend" />
+        android:text="Stop" />
 
-    <Button
-        android:id="@+id/btnSend"
-        android:textAllCaps="false"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatEditText
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/ivSendMessage"
+            android:id="@+id/etMessage"
+            android:layout_marginHorizontal="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:id="@+id/ivSendMessage"
+            android:layout_margin="8dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_send"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_margin="8dp"
+        android:id="@+id/tvSendMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Send"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btnClear" />
+        android:textColor="@android:color/holo_orange_dark"
+        android:layout_gravity="start"/>
 
-    <Button
-        android:id="@+id/btnClear"
-        android:textAllCaps="false"
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_margin="8dp"
+        android:id="@+id/tvReceivedMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Clear"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tvOut"
-        android:visibility="gone"/>
+        android:textColor="@android:color/holo_blue_dark"
+        android:layout_gravity="start"/>
 
-    <TextView
-        android:id="@+id/tvOut"
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_margin="8dp"
+        android:id="@+id/tvErrorMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        tools:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textColor="@android:color/holo_red_dark"
+        android:layout_gravity="start"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <androidx.appcompat.widget.AppCompatTextView
+        android:layout_margin="8dp"
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/black"
+        android:layout_gravity="start"/>
+
+</androidx.appcompat.widget.LinearLayoutCompat>
