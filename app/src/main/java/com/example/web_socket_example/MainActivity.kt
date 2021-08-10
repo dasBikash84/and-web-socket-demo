@@ -1,31 +1,28 @@
 package com.example.web_socket_example
 
+import android.graphics.Color
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
 import kotlinx.android.synthetic.main.activity_main.*
-import okhttp3.*
-import okio.ByteString
-import java.text.SimpleDateFormat
-import java.util.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.WebSocket
 
 
 class MainActivity : AppCompatActivity() {
 
-
-    private val displayDateStringFormat = "EEE, d MMM yyyy HH:mm:ss.SSS Z"
-    private val dateFormatter by lazy {
-        SimpleDateFormat(displayDateStringFormat, Locale.getDefault())
-    }
-
     private val client: OkHttpClient by lazy { OkHttpClient() }
     private var ws: WebSocket?=null
+
+    private val logMessageAdapter by lazy { LogMessageAdapter() }
+
+    private val logMessages = mutableListOf<LogMessage>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        rvLogMessage.adapter = logMessageAdapter
 
         btnStart.setOnClickListener { start() }
 
@@ -52,7 +49,6 @@ class MainActivity : AppCompatActivity() {
         val request: Request = Request.Builder().url("ws://echo.websocket.org").build()
         println(request.url().toString())
         val listener = EchoWebSocketListener(
-            ::displaySend,
             ::displayReceived,
             ::displayError,
             ::displayStatusMessage,
@@ -67,95 +63,39 @@ class MainActivity : AppCompatActivity() {
         runOnMainThread {
             btnStart.isEnabled = true
             btnStop.isEnabled = false
+            ws = null
         }
     }
 
     private fun onConOpen() {
         runOnMainThread {
-            tvSendMessage.text = ""
-            tvErrorMessage.text = ""
-            tvErrorMessage.text = ""
             btnStart.isEnabled = false
             btnStop.isEnabled = true
         }
     }
 
-    private fun displaySend(message: String) {
+    private fun displayMessage(message: String,displayTextColor:Int=Color.BLACK) {
         runOnMainThread {
-            tvSendMessage.text = "${getTimeStamp()} | Sent : $message"
-            tvReceivedMessage.text = ""
-            tvErrorMessage.text = ""
+            val logMessage = LogMessage(message,displayTextColor)
+            logMessages.add(logMessage)
+            logMessageAdapter.submitList(
+                logMessages.sortedByDescending { it.timeStamp }
+            )
+            runOnMainThread (500L) {
+                rvLogMessage.scrollToPosition(0)
+            }
         }
     }
 
-    private fun getTimeStamp() = dateFormatter.format(Date())
+    private fun displaySend(message: String)
+        = displayMessage(getString(R.string.sent_str,message),Color.WHITE)
 
-    private fun displayReceived(message: String) {
-        runOnMainThread{
-            tvReceivedMessage.text = "${getTimeStamp()} | Received: $message"
-            tvErrorMessage.text = ""
-        }
-    }
+    private fun displayReceived(message: String)
+        = displayMessage(getString(R.string.received_str,message),Color.MAGENTA)
 
-    private fun displayError(message: String) {
-        runOnMainThread {
-            tvReceivedMessage.text = ""
-            tvErrorMessage.text = "${getTimeStamp()} | Error: $message"
-        }
-    }
+    private fun displayError(message: String)
+        = displayMessage(getString(R.string.error_str,message),Color.RED)
 
-    private fun displayStatusMessage(message: String) {
-        runOnMainThread {
-            tvStatus.text = "${getTimeStamp()} | Status: $message"
-        }
-    }
-
-    private class EchoWebSocketListener(
-        val displaySend: (String) -> Unit,
-        val displayReceived: (String) -> Unit,
-        val displayError: (String) -> Unit,
-        val displayStatusMessage: (String) -> Unit,
-        val onOpen:()->Unit,
-        val onClose:() -> Unit
-    ) : WebSocketListener() {
-
-        override fun onOpen(webSocket: WebSocket, response: Response?) {
-            displayStatusMessage("Connection opened......")
-            onOpen.invoke()
-        }
-
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            println("Received string : $text")
-            displayStatusMessage("Received string : $text")
-            displayReceived(text)
-        }
-
-        override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-            println("Received bytes : " + bytes.hex())
-        }
-
-        override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-//            webSocket.close(NORMAL_CLOSURE_STATUS, null)
-            println("Closing : $code / $reason")
-            displayStatusMessage("Connection closed : Code:$code, Reason: $reason")
-            onClose.invoke()
-        }
-
-        override fun onFailure(webSocket: WebSocket?, t: Throwable, response: Response?) {
-            println("Error : " + t.message)
-            displayStatusMessage("Error : " + t.message)
-            displayError("Error : " + t.message)
-            onClose.invoke()
-        }
-
-        companion object {
-            const val NORMAL_CLOSURE_STATUS = 1000
-        }
-    }
+    private fun displayStatusMessage(message: String) = displayMessage(getString(R.string.status_str,message))
 }
 
-fun <T> runOnMainThread(delayMs: Long = 0L, task: () -> T) {
-    Handler(Looper.getMainLooper()).postDelayed({
-        try{ task.invoke() }catch (ex:Throwable){ex.printStackTrace()}
-    }, delayMs)
-}
