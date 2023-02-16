@@ -3,12 +3,9 @@ package com.das_bikash.chat_demo
 import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.das_bikash.chat_demo.R
-import io.socket.client.IO
-import io.socket.client.Socket
-import io.socket.emitter.Emitter
+import com.das_bikash.chat_demo.utils.debugLog
+import com.das_bikash.chat_demo.utils.runOnMainThread
 import kotlinx.android.synthetic.main.activity_main.*
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -16,12 +13,8 @@ class MainActivity : AppCompatActivity() {
         private const val URL = "http://192.168.0.130:3000"
     }
 
-    private val mSocket: Socket? by lazy {
-        try {
-            IO.socket(URL)
-        } catch (e:Throwable) {
-            null
-        }
+    private val mSocket: LifeCycleAwareSocket by lazy {
+        LifeCycleAwareSocket.getInstance(URL,this)
     }
 
     private val logMessageAdapter by lazy { LogMessageAdapter() }
@@ -37,59 +30,58 @@ class MainActivity : AppCompatActivity() {
         btnStart.setOnClickListener { start() }
 
         btnStop.setOnClickListener {
-            mSocket?.close()
-
-            btnStop.isEnabled = false
-            btnStart.isEnabled = true
+            mSocket.close()
         }
 
         ivSendMessage.setOnClickListener {
             etMessage.text?.toString()?.let { message ->
                 if (message.isNotBlank()){
-                    mSocket?.let { socket ->
-                        socket.emit("echo",message)
-                        displaySend(message)
+                    mSocket.let { socket ->
+                        socket.emit("echo", message)
+                        displayReceived(message)
                     }
                 }
             }
             etMessage.setText("")
         }
 
+        updateUi(mSocket.isConnected.debugLog())
+
     }
 
     private fun start() {
-//        val request: Request = Request.Builder().url(URL).build()
-//        println(request.url().toString())
-//        val listener = EchoWebSocketListener(
-//            ::displayReceived,
-//            ::displayError,
-//            ::displayStatusMessage,
-//            ::onConOpen,
-//            ::onConClose
-//        )
-//        ws = client.newWebSocket(request, listener)
-        mSocket?.open()
-        btnStop.isEnabled = true
-        btnStart.isEnabled = false
-        mSocket?.on("echo",object : Emitter.Listener{
-            override fun call(vararg args: Any?) {
-               displayMessage(args?.map { it.toString() }?.joinToString(separator = " | "))
+        mSocket.connect(
+            onConnect = {
+                updateUi(true)
+                it?.let { socket ->
+                    socket.on("echo"
+                    ) { args ->
+                        displayReceived(args?.joinToString(separator = " | ") { it1 ->
+                            it1.toString()
+                        }.orEmpty())
+                    }
+                    ivSendMessage.setOnClickListener{
+                        etMessage.text?.toString()?.apply {
+                            socket.emit("echo",this)
+                            etMessage.setText("")
+                        }.orEmpty()
+                    }
+                }
+            },
+            onDisConnect = {
+                updateUi(false)
+                ivSendMessage.setOnClickListener(null)
             }
+        )
 
-        })
     }
 
-    private fun onConClose() {
+    private fun updateUi(open:Boolean) {
         runOnMainThread {
-            btnStart.isEnabled = true
-            btnStop.isEnabled = false
-        }
-    }
-
-    private fun onConOpen() {
-        runOnMainThread {
-            btnStart.isEnabled = false
-            btnStop.isEnabled = true
+            btnStart.isEnabled = open.not()
+            btnStop.isEnabled = open
+            etMessage.isEnabled = open
+            ivSendMessage.isEnabled = open
         }
     }
 
