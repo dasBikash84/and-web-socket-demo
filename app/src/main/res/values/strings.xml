@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Web Socket Demo</string>
+    <string name="open_connection">Open Connection</string>
+    <string name="close_connection">Close Connection</string>
+    <string name="sent_str">Sent : %1$s</string>
+    <string name="received_str">Received : %1$s</string>
+    <string name="error_str">Error : %1$s</string>
+    <string name="status_str">Status : %1$s</string>
+</resources>
